@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <artifactId>apache</artifactId>
+    <groupId>org.apache</groupId>
+    <version>14</version>
+    <relativePath>../pom.xml/pom.xml</relativePath>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.apache.pig</groupId>
+  <artifactId>RoaringBitmap-shaded</artifactId>
+  <name>Pig RoaringBitmap</name>
+  <version>${roaring.bitmap.version}</version>
+  <url>http://pig.apache.org</url>
+  <prerequisites>
+    <maven>3.0</maven>
+  </prerequisites>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>${maven.shade.plugin.version}</version>
+        <executions>
+          <execution>
+            <id>shade-asm</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <relocations>
+                <relocation>
+                  <pattern>org.roaringbitmap</pattern>
+                  <shadedPattern>org.apache.pig.org.roaringbitmap</shadedPattern>
+                </relocation>
+              </relocations>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  <properties>
+    <maven.shade.plugin.version>2.4.3</maven.shade.plugin.version>
+    <roaring.bitmap.version>0.7.14</roaring.bitmap.version>
+  </properties>
+</project>
+

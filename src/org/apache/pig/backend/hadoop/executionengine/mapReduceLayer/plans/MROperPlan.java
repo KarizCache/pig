@@ -24,6 +24,10 @@ import org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.MapReduceOpe
 import org.apache.pig.impl.plan.OperatorPlan;
 import org.apache.pig.impl.plan.VisitorException;
 
+/*Kariz B*/
+import org.json.simple.JSONObject;
+import java.util.UUID;
+/*Kariz E*/
 
 /**
  * A Plan used to create the plan of 
@@ -35,6 +39,7 @@ import org.apache.pig.impl.plan.VisitorException;
 public class MROperPlan extends OperatorPlan<MapReduceOper> {
 
     private static final long serialVersionUID = 1L;
+    private final String uuid = UUID.randomUUID().toString();
 
     public MROperPlan() {
         // TODO Auto-generated constructor stub
@@ -57,5 +62,22 @@ public class MROperPlan extends OperatorPlan<MapReduceOper> {
         }
         return baos.toString();
     }
+
+    /*Kariz B*/
+    public JSONObject toJson() {
+        JSONObject obj = new JSONObject();
+	JsonMRPrinter printer = new JsonMRPrinter(obj, this);
+	
+	obj.put("id", uuid);
+
+	try {
+            printer.visit();
+        } catch (VisitorException e) {
+            // TODO Auto-generated catch block
+            throw new RuntimeException("Unable to get String representation of plan:" + e );
+        }
+	return obj;
+    }
+    /*Kariz E*/
 
 }

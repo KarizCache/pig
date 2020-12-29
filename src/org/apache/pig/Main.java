@@ -172,6 +172,14 @@ public class Main {
      * @throws IOException
      */
     public static void main(String args[]) {
+	System.out.println("I am inside main function");
+	//Thread.sleep(10);
+	try {
+            // thread to sleep for 1000 milliseconds
+            Thread.sleep(30000);
+        } catch (Exception e) {
+            System.out.println(e);
+        }
         System.exit(run(args, null));
     }
 

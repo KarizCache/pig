@@ -87,6 +87,33 @@ import org.apache.pig.tools.pigstats.mapreduce.MRJobStats;
 import org.apache.pig.tools.pigstats.mapreduce.MRPigStatsUtil;
 import org.apache.pig.tools.pigstats.mapreduce.MRScriptState;
 
+
+/*KARIZ B*/
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+
+import org.apache.http.util.EntityUtils;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.impl.client.HttpClients;
+
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.message.BasicHeader;
+/*KARIZ E*/
+
+
 /**
  * Main class that launches pig for Map Reduce
  *
@@ -159,6 +186,34 @@ public class MapReduceLauncher extends Launcher {
         return failureMap.get(spec);
     }
 
+    /*Kariz B*/
+    public void karizNotifyDagSubmission(MROperPlan mrp, PigContext pc) {
+        String karizEndpoint = pc.getProperties().getProperty("kariz.endpoint");
+
+	try {
+	    HttpClient httpclient = HttpClients.createDefault();
+            HttpPost request = new HttpPost(karizEndpoint + "/api/newstage");
+
+            /* Request parameters and other properties.*/
+	    request.addHeader("content-type", "application/json");
+            request.setHeader("Accept", "text/plain");
+
+	    mrp.toString();
+
+
+            StringEntity entity = new StringEntity(mrp.toJson().toString(), "UTF8");
+            entity.setContentType("text/plain");
+            request.setEntity(entity);
+
+            //Execute and get the response.
+            HttpResponse response = httpclient.execute(request);
+            System.out.println(response.getStatusLine().getStatusCode());
+	} catch (IOException e) {
+	    System.out.println(e.getMessage());
+	}
+    }
+    /*Kariz E*/
+
     @Override
     public PigStats launchPig(PhysicalPlan php,
             String grpName,
@@ -171,6 +226,13 @@ public class MapReduceLauncher extends Launcher {
         long sleepTime = 500;
         aggregateWarning = Boolean.valueOf(pc.getProperties().getProperty("aggregate.warning"));
         MROperPlan mrp = compile(php, pc);
+
+	/*Kariz B*/
+        Boolean isKariz =  Boolean.valueOf(pc.getProperties().getProperty("kariz.enable"));
+	if (isKariz) { 
+ 	   karizNotifyDagSubmission(mrp, pc);
+	}
+	/*Kariz E*/
 
         ConfigurationValidator.validatePigProperties(pc.getProperties());
         Configuration conf = ConfigurationUtil.toConfiguration(pc.getProperties());
