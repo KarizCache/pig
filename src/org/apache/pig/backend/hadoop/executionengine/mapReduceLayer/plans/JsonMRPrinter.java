@@ -76,6 +76,7 @@ public class JsonMRPrinter extends MROpPlanVisitor {
     public void visitMROp(MapReduceOper mr) throws VisitorException {
 	JSONObject opJsonObj= new JSONObject();
         opJsonObj.put("operator",  mr.getOperatorKey().toString());
+        opJsonObj.put("vid",  mr.getOperatorKey().toString());
         opJsonObj.put("feature", mr.getFeature());
 
         if(mr instanceof NativeMapReduceOper) {
@@ -110,6 +111,13 @@ public class JsonMRPrinter extends MROpPlanVisitor {
 	}
         
 	this.nodes_jarr.add(opJsonObj);
+    }
+
+    public void visitEdge(String src, String target) {
+	JSONObject opJsonObj= new JSONObject();
+	opJsonObj.put("source", src);
+	opJsonObj.put("target", target);
+	this.edges_jarr.add(opJsonObj);
     }
 }
 

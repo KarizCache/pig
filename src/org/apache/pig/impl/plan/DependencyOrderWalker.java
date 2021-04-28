@@ -72,7 +72,6 @@ public class DependencyOrderWalker <O extends Operator, P extends OperatorPlan<O
         // list.  It then unwinds itself putting each of the other nodes in the list.
         // It keeps track of what nodes it's seen as it goes so it doesn't put any
         // nodes in the graph twice.
-
         List<O> fifo = new ArrayList<O>();
         Set<O> seen = new HashSet<O>();
         List<O> leaves = mPlan.getLeaves();
@@ -81,7 +80,7 @@ public class DependencyOrderWalker <O extends Operator, P extends OperatorPlan<O
             Collections.sort(leaves);
         }
         for (O op : leaves) {
-            doAllPredecessors(op, seen, fifo);
+            doAllPredecessors(op, seen, fifo, visitor);
         }
         for (O op: fifo) {
             op.visit(visitor);
@@ -95,14 +94,17 @@ public class DependencyOrderWalker <O extends Operator, P extends OperatorPlan<O
 
     protected void doAllPredecessors(O node,
                                    Set<O> seen,
-                                   Collection<O> fifo) throws VisitorException {
+                                   Collection<O> fifo,
+                                   PlanVisitor<O, P> visitor) throws VisitorException {
         if (!seen.contains(node)) {
             // We haven't seen this one before.
             Collection<O> preds = Utils.mergeCollection(mPlan.getPredecessors(node), mPlan.getSoftLinkPredecessors(node));
             if (preds != null && preds.size() > 0) {
                 // Do all our predecessors before ourself
+
                 for (O op : preds) {
-                    doAllPredecessors(op, seen, fifo);
+                    visitor.visitEdge(op.mKey.toString() , node.mKey.toString());
+                    doAllPredecessors(op, seen, fifo, visitor);
                 }
             }
             // Now do ourself

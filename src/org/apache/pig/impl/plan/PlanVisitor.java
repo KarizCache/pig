@@ -82,4 +82,7 @@ abstract public class PlanVisitor <O extends Operator, P extends OperatorPlan<O>
         }
         mCurrentWalker = mWalkers.pop();
     }
+
+    public void visitEdge(String src, String target) {
+    }
 }

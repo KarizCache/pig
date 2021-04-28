@@ -66,20 +66,20 @@ public class MROperPlan extends OperatorPlan<MapReduceOper> {
     /*Kariz B*/
     public JSONObject toJson() {
         JSONObject obj = new JSONObject();
-	JsonMRPrinter printer = new JsonMRPrinter(obj, this);
-	
-	obj.put("uuid", uuid);
-	obj.put("id", new Integer(0));
-	obj.put("analyticframework", new String("Pig"));
-	obj.put("executionengine", new String("MapReduce"));
+        JsonMRPrinter printer = new JsonMRPrinter(obj, this);
 
-	try {
-            printer.visit();
-        } catch (VisitorException e) {
-            // TODO Auto-generated catch block
-            throw new RuntimeException("Unable to get String representation of plan:" + e );
-        }
-	return obj;
+        obj.put("uuid", uuid);
+        obj.put("id", new Integer(0));
+        obj.put("analyticframework", new String("Pig"));
+        obj.put("executionengine", new String("MapReduce"));
+
+        try {
+                printer.visit();
+            } catch (VisitorException e) {
+                // TODO Auto-generated catch block
+                throw new RuntimeException("Unable to get String representation of plan:" + e );
+            }
+        return obj;
     }
     /*Kariz E*/
 
