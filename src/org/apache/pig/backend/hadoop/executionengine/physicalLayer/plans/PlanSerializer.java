@@ -57,6 +57,14 @@ import org.apache.pig.impl.plan.PlanVisitor;
 import org.apache.pig.impl.plan.VisitorException;
 import org.apache.pig.impl.util.MultiMap;
 
+/*Kariz B*/
+//import org.json.simple.JSONObject;
+import org.json.simple.*;
+
+import java.util.UUID;
+/*Kariz E*/
+
+
 public class PlanSerializer<O extends Operator, P extends OperatorPlan<O>> extends
         PlanVisitor<O, P> {
 
@@ -71,16 +79,15 @@ public class PlanSerializer<O extends Operator, P extends OperatorPlan<O>> exten
     int levelCntr = -1;
 
     PrintStream stream = System.out;
-    JSONObject planJsonObj; 
     boolean isVerbose = true;
+
+    JSONArray verboseOpArr;
+    JSONArray opArr;
 
     public PlanSerializer(P plan) {
         super(plan, new DepthFirstWalker<O, P>(plan));
-    }
-
-    public PlanSerializer(P plan, JSONObject planJsonObj) {
-        super(plan, new DepthFirstWalker<O, P>(plan));
-	this.planJsonObj = planJsonObj;
+	verboseOpArr = new JSONArray();
+	opArr = new JSONArray();
     }
 
     public void setVerbose(boolean verbose) {
@@ -99,7 +106,7 @@ public class PlanSerializer<O extends Operator, P extends OperatorPlan<O>> exten
     }
 
     public void print(OutputStream printer) throws VisitorException, IOException {
-        printer.write(depthFirstPP().getBytes());
+        printer.write(depthFirstPP().toString().getBytes());
     }
 
     protected void breadthFirst() throws VisitorException {
@@ -131,17 +138,43 @@ public class PlanSerializer<O extends Operator, P extends OperatorPlan<O>> exten
     }
 
     @SuppressWarnings("unchecked")
-    protected String depthFirstPP() throws VisitorException {
-        StringBuilder sb = new StringBuilder();
+    public JSONArray visitRoots() {
+	JSONArray inputsJArr = new JSONArray();
+	List<O> roots = mPlan.getRoots();
+        Collections.sort(roots);
+        for (O node : roots) {
+	    if(node instanceof POLoad){
+	        inputsJArr.add(((POLoad)node).getLFile().getFileName());
+	    }
+        }
+	return inputsJArr;
+    }
+
+    @SuppressWarnings("unchecked")
+    public JSONArray visitLeaves() {
+        JSONArray outputsJArr = new JSONArray();
+        List<O> leaves = mPlan.getLeaves();
+        Collections.sort(leaves);
+        for (O node : leaves) {
+            if(node instanceof POStore){
+                outputsJArr.add(((POStore)node).getSFile().getFileName());
+            }
+        }
+        return outputsJArr;
+    }
+
+
+    @SuppressWarnings("unchecked")
+    public JSONObject depthFirstPP() throws VisitorException {
+	JSONObject ops = new JSONObject();
         List<O> leaves = mPlan.getLeaves();
         Collections.sort(leaves);
         for (O leaf : leaves) {
-            sb.append(depthFirst(leaf));
-            sb.append("\n");
+            depthFirst(leaf);
         }
-        sb.delete(sb.length() - "\n".length(), sb.length());
-        sb.delete(sb.length() - "\n".length(), sb.length());
-        return sb.toString();
+        ops.put("verbose", verboseOpArr);
+	ops.put("ops", opArr);
+	return ops;
     }
 
     private String planString(PhysicalPlan pp){
@@ -166,82 +199,61 @@ public class PlanSerializer<O extends Operator, P extends OperatorPlan<O>> exten
     }
 
     @SuppressWarnings("unchecked")
-    private String depthFirst(O node) throws VisitorException {
-        StringBuilder sb = new StringBuilder(node.name() + "\n");
+    private void depthFirst(O node) throws VisitorException {
         if (isVerbose) {
           if(node instanceof POFilter){
-            sb.append(planString(((POFilter)node).getPlan()));
+	      verboseOpArr.add("POFilter");
           }
           else if(node instanceof POLocalRearrange){
-            sb.append(planString(((POLocalRearrange)node).getPlans()));
+	      verboseOpArr.add("POLocalRearrange");
           }
           else if(node instanceof POPartialAgg){
-              sb.append(planString(((POPartialAgg)node).getKeyPlan()));
-              sb.append(planString(((POPartialAgg)node).getValuePlans()));
+	      verboseOpArr.add("POPartialAgg");
           }
           else if(node instanceof POCollectedGroup){
-            sb.append(planString(((POCollectedGroup)node).getPlans()));
+	      verboseOpArr.add("POCollectedGroup");
           }
           else if(node instanceof PORank){
-              sb.append(planString(((PORank)node).getRankPlans()));
+	      verboseOpArr.add("PORank");
           }
           else if(node instanceof POCounter){
-              sb.append(planString(((POCounter)node).getCounterPlans()));
+	      verboseOpArr.add("POCounter");
           }
           else if(node instanceof POSort){
-            sb.append(planString(((POSort)node).getSortPlans()));
+              verboseOpArr.add("POSort");
           }
           else if(node instanceof POForEach){
-            sb.append(planString(((POForEach)node).getInputPlans()));
+              verboseOpArr.add("POForEach");
           }
           else if(node instanceof POPackage){
-            Packager pkgr = ((POPackage) node).getPkgr();
-            if(pkgr instanceof MultiQueryPackager){
-              List<Packager> pkgrs = ((MultiQueryPackager) pkgr).getPackagers();
-              for (Packager child : pkgrs){
-                  sb.append(LSep + child.name() + "\n");
-              }
-            }
+              Packager pkgr = ((POPackage) node).getPkgr();
+       	      if (pkgr instanceof MultiQueryPackager) {
+   	         verboseOpArr.add("MultiQueryPackager");
+   	      } else {
+   	         verboseOpArr.add("POPackager");
+   	      }
           }
           else if(node instanceof POFRJoin){
-            POFRJoin frj = (POFRJoin)node;
-            List<List<PhysicalPlan>> joinPlans = frj.getJoinPlans();
-            if(joinPlans!=null)
-              for (List<PhysicalPlan> list : joinPlans) {
-                sb.append(planString(list));
-              }
+	      verboseOpArr.add("POFRJoin");
           }
           else if(node instanceof POSkewedJoin){
-              POSkewedJoin skewed = (POSkewedJoin)node;
-              MultiMap<PhysicalOperator, PhysicalPlan> joinPlans = skewed.getJoinPlans();
-              if(joinPlans!=null) {
-                  List<PhysicalPlan> inner_plans = new ArrayList<PhysicalPlan>();
-                  inner_plans.addAll(joinPlans.values());
-                  sb.append(planString(inner_plans));
-              }
+	      verboseOpArr.add("POSkewedJoin");
           }
           else if(node instanceof POLimit) {
-              PhysicalPlan limitPlan = ((POLimit)node).getLimitPlan();
-              if (limitPlan != null) {
-                  sb.append(planString(limitPlan));
-              }
+	      verboseOpArr.add("POLimit");
           }
         }
 
         if (node instanceof POSplit) {
-            sb.append(planString(((POSplit)node).getPlans()));
+	    opArr.add("POSplit");
         }
         else if (node instanceof PODemux) {
-            List<PhysicalPlan> plans = new ArrayList<PhysicalPlan>();
-            Set<PhysicalPlan> pl = new HashSet<PhysicalPlan>();
-            pl.addAll(((PODemux)node).getPlans());
-            plans.addAll(pl);
-            sb.append(planString(plans));
+	    opArr.add("PODemux");
         }
 
         List<O> originalPredecessors = mPlan.getPredecessors(node);
         if (originalPredecessors == null)
-            return sb.toString();
+            return;
 
         List<O> predecessors =  new ArrayList<O>(originalPredecessors);
 
@@ -249,16 +261,8 @@ public class PlanSerializer<O extends Operator, P extends OperatorPlan<O>> exten
         int i = 0;
         for (O pred : predecessors) {
             i++;
-            String DFStr = depthFirst(pred);
-            if (DFStr != null) {
-                sb.append(LSep);
-                if (i < predecessors.size())
-                    sb.append(shiftStringByTabs(DFStr, 2));
-                else
-                    sb.append(shiftStringByTabs(DFStr, 1));
-            }
+            depthFirst(pred);
         }
-        return sb.toString();
     }
 
     private String shiftStringByTabs(String DFStr, int TabType) {

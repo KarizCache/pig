@@ -400,6 +400,10 @@ public class MapReduceOper extends Operator<MROpPlanVisitor> {
         return quantFile;
     }
 
+    public String getFeature() {
+	return feature.name();
+    }
+
     public void setQuantFile(String quantFile) {
         this.quantFile = quantFile;
     }

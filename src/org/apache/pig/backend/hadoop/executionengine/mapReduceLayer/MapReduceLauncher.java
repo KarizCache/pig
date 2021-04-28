@@ -192,14 +192,11 @@ public class MapReduceLauncher extends Launcher {
 
 	try {
 	    HttpClient httpclient = HttpClients.createDefault();
-            HttpPost request = new HttpPost(karizEndpoint + "/api/newstage");
+            HttpPost request = new HttpPost(karizEndpoint + "/api/newdag");
 
             /* Request parameters and other properties.*/
 	    request.addHeader("content-type", "application/json");
             request.setHeader("Accept", "text/plain");
-
-	    mrp.toString();
-
 
             StringEntity entity = new StringEntity(mrp.toJson().toString(), "UTF8");
             entity.setContentType("text/plain");

@@ -172,14 +172,16 @@ public class Main {
      * @throws IOException
      */
     public static void main(String args[]) {
-	System.out.println("I am inside main function");
-	//Thread.sleep(10);
+	/*Kariz B*/
+	// This is for debugging Kariz, I have added a 30second delay to connect JVM debugger to the running pig. 
+	System.out.println("I will wait for 30 seconds to connect your debugger to this application");
 	try {
             // thread to sleep for 1000 milliseconds
             Thread.sleep(30000);
         } catch (Exception e) {
             System.out.println(e);
         }
+	/*Kariz E*/
         System.exit(run(args, null));
     }
 

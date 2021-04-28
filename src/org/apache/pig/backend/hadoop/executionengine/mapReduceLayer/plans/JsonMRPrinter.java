@@ -32,6 +32,8 @@ import org.apache.pig.impl.plan.VisitorException;
 
 /*Kariz B*/
 import org.json.simple.JSONObject;
+import org.json.simple.*;
+//import org.json.JSONException;
 import java.util.UUID;
 /*Kariz E*/
 
@@ -44,21 +46,23 @@ public class JsonMRPrinter extends MROpPlanVisitor {
     private PrintStream mStream = null;
     private JSONObject jObject = null;
     private boolean isVerbose = true;
+    private JSONArray nodes_jarr;
+    private JSONArray edges_jarr;
 
     /**
      * @param ps PrintStream to output plan information to
      * @param plan MR plan to print
      */
-    public JsonMRPrinter(MROperPlan plan) {
+    public JsonMRPrinter(JSONObject jObject, MROperPlan plan) {
         super(plan, new DependencyOrderWalker<MapReduceOper, MROperPlan>(plan, true));
-        JSONArray nodes_jarr = new JSONArray();
-	JSONArray edges_jarr = new JSONArray();
+        this.nodes_jarr = new JSONArray();
+	this.edges_jarr = new JSONArray();
 
-        jObject = new JSONObject();
+        this.jObject = jObject;
         try {
-            jobject.put("nodes", nodes_jarr);
-	    jobject.put("edges", edges_jarr);
-        } catch(JSONException e) {
+            this.jObject.put("nodes", nodes_jarr);
+	    this.jObject.put("edges", edges_jarr);
+        } catch(Exception e) {
             e.printStackTrace();
         }
         	
@@ -70,50 +74,42 @@ public class JsonMRPrinter extends MROpPlanVisitor {
 
     @Override
     public void visitMROp(MapReduceOper mr) throws VisitorException {
-	JSONArray nodes_jarr = jsonObj.getJSONArray("nodes");
-
 	JSONObject opJsonObj= new JSONObject();
         opJsonObj.put("operator",  mr.getOperatorKey().toString());
-        opJsonObj.put("feature", mr.feature.name);
+        opJsonObj.put("feature", mr.getFeature());
 
-
-        nodes_array.put();
         if(mr instanceof NativeMapReduceOper) {
-            mStream.println(((NativeMapReduceOper)mr).getCommandString());
-            mStream.println("--------");
-            mStream.println();
+            //mStream.println(((NativeMapReduceOper)mr).getCommandString());
+            //mStream.println("--------");
+            //mStream.println();
             return;
         }
         if (mr.mapPlan != null && mr.mapPlan.size() > 0) {
-            mStream.println("Map Plan");
-            PlanPrinter<PhysicalOperator, PhysicalPlan> serializer = new PlanSerializer<PhysicalOperator, PhysicalPlan>(mr.mapPlan, opJsonObj);
-            serializer.setVerbose(isVerbose);
-            serializer.visit();
+            PlanSerializer<PhysicalOperator, PhysicalPlan> serializer = new PlanSerializer<PhysicalOperator, PhysicalPlan>(mr.mapPlan);
+            opJsonObj.put("inputs", serializer.visitRoots());
+	    serializer.setVerbose(isVerbose);
+            opJsonObj.put("mapOps", serializer.depthFirstPP());
         }
         if (mr.combinePlan != null && mr.combinePlan.size() > 0) {
-            mStream.println("Combine Plan");
-            PlanPrinter<PhysicalOperator, PhysicalPlan> serializer = new PlanSerializer<PhysicalOperator, PhysicalPlan>(mr.combinePlan, opJsonObj);
+            PlanSerializer<PhysicalOperator, PhysicalPlan> serializer = new PlanSerializer<PhysicalOperator, PhysicalPlan>(mr.combinePlan);
             serializer.setVerbose(isVerbose);
-            serializer.visit();
-            mStream.println("--------");
+	    opJsonObj.put("combinerOps", serializer.depthFirstPP());
         }
         if (mr.reducePlan != null && mr.reducePlan.size() > 0) {
-            mStream.println("Reduce Plan");
-            PlanPrinter<PhysicalOperator, PhysicalPlan> serializer = new PlanSerializer<PhysicalOperator, PhysicalPlan>(mr.reducePlan, opJsonObj);
+            PlanSerializer<PhysicalOperator, PhysicalPlan> serializer = new PlanSerializer<PhysicalOperator, PhysicalPlan>(mr.reducePlan);
             serializer.setVerbose(isVerbose);
-            serializer.visit();
-            mStream.println("--------");
+	    opJsonObj.put("outputs", serializer.visitLeaves());
+	    opJsonObj.put("reduceOps", serializer.depthFirstPP());
+
         }
-        mStream.println("Global sort: " + mr.isGlobalSort());
         if (mr.getQuantFile() != null) {
-            mStream.println("Quantile file: " + mr.getQuantFile());
+	    opJsonObj.put("QuantileFile", mr.getQuantFile());
         }
-        if (mr.getUseSecondaryKey())
-            mStream.println("Secondary sort: " + mr.getUseSecondaryKey());
-        mStream.println("----------------");
-        mStream.println("");
+        if (mr.getUseSecondaryKey()) {
+	    opJsonObj.put("SecondarySort", mr.getUseSecondaryKey());
+	}
         
-	nodes_jarr.put(opJsonObj.valueToString());
+	this.nodes_jarr.add(opJsonObj);
     }
 }
 
